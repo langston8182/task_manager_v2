@@ -3,17 +3,27 @@ from time import sleep
 from typing import Any, Dict
 
 from langchain_core.documents import Document
-
 from graph.models.GraphState import GraphState
-from tools.get_retriever import (embeddings, index_name, mongo_collection,
-                                 mongo_vector_store)
+from tools.get_retriever import embeddings, index_name, mongo_collection, mongo_vector_store
 
 
 def add_task(state: GraphState) -> Dict[str, Any]:
+    """
+    Ajoute une tâche au store vectoriel Mongo.
+
+    :param state: Un objet GraphState contenant au moins un attribut 'task'.
+    :return: Un dictionnaire contenant un message de succès et la tâche ajoutée.
+    """
     task = state["task"]
-    task_to_add = task.copy().__dict__
-    task_to_add.pop("type")
-    json_task = json.dumps(task_to_add)
+
+    # Extraire les données de la tâche sous forme de dictionnaire
+    # et exclure le champ 'type' si présent
+    task_data = {k: v for k, v in vars(task).items() if k != "type"}
+
+    # Convertir en JSON
+    json_task = json.dumps(task_data)
+
+    # Créer un Document et l'ajouter à la base vectorielle
     documents = [Document(page_content=json_task)]
     mongo_vector_store.from_documents(
         documents=documents,
@@ -22,7 +32,9 @@ def add_task(state: GraphState) -> Dict[str, Any]:
         index_name=index_name,
     )
 
-    task_json = json.dumps(task.__dict__)
-
     sleep(2)
-    return {"message": "Tache ajoutée avec succès.", "task": task}
+    # Retourner la réponse
+    return {
+        "message": "Tache ajoutée avec succès.",
+        "task": task
+    }
